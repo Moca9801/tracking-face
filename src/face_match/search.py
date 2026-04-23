@@ -76,6 +76,7 @@ def run_search(
     results: list[tuple[float, Path, str]] = []
     need_save = rebuild_cache
     q_feat_f = q_feat
+    n_with_face = 0  # contador real de imágenes donde se detectó un rostro
 
     for imp in images:
         if imp.resolve() == query.resolve():
@@ -93,6 +94,7 @@ def run_search(
             and entry[0] == mtime
         ):
             feat = np.asarray(entry[1])
+            n_with_face += 1
         else:
             bgr = load_bgr(imp)
             if bgr is None:
@@ -101,19 +103,20 @@ def run_search(
             if feat is None:
                 print(f"Sin rostro (omitida): {imp.name}", file=sys.stderr)
                 continue
+            n_with_face += 1
             cache[key] = (mtime, feat)
             need_save = True
-        
+
         d = float(recognizer.match(q_feat_f, feat, dis_type))
-        
+
         # Filtrado por umbral (threshold)
-        if distance == 0: # Coseno (más es mejor)
+        if distance == 0:  # Coseno (más es mejor)
             if d < threshold:
                 continue
-        else: # L2 (menos es mejor)
+        else:  # L2 (menos es mejor)
             if d > threshold:
                 continue
-                
+
         results.append((d, imp, metric))
 
     if need_save and cache:
@@ -125,21 +128,35 @@ def run_search(
     results.sort(key=lambda x: x[0], reverse=(distance == 0))
     k = min(top, len(results))
 
-    print()
-    print(f"Consulta: {query}")
-    print(f"Base: {db.resolve()}  ({len(images)} imágenes, {len(results)} con rostro)")
     desc = (
         "valores mayores = más parecido"
         if distance == 0
         else "valores menores = más parecido"
     )
+
+    print()
+    print(f"Consulta: {query}")
+    print(
+        f"Base: {db.resolve()}  "
+        f"({len(images)} imágenes escaneadas, "
+        f"{n_with_face} con rostro detectado, "
+        f"{len(results)} supera umbral {threshold:.3f})"
+    )
     print(f"Métrica: {metric} ({desc})")
     print()
+
+    # Bug fix: este check debe ir ANTES del loop de impresión
+    if not results:
+        print(
+            f"Sin coincidencias. Ninguna imagen superó el umbral de similitud ({threshold:.3f}). "
+            "Prueba con un umbral más bajo (ej. --threshold 0.2) o usa otra foto.",
+            file=sys.stderr,
+        )
+        return 1
+
     for i in range(k):
         d, p, m = results[i]
         print(f"{i + 1}.  dist={d:.4f}  {m}  {p.resolve()}")
 
-    if not results:
-        print("No quedó ninguna imagen con rostro para comparar.", file=sys.stderr)
-        return 1
     return 0
+

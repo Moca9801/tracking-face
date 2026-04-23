@@ -36,29 +36,42 @@ pip install .
 2. Ejecuta:
 
 ```bash
-face-match ruta/a/consulta.jpg
+# Búsqueda estándar (usa umbral por defecto 0.363 para coseno)
+face-match consulta.jpg
+
+# Búsqueda en una carpeta específica con más resultados
 face-match consulta.jpg --db C:\ruta\galeria -n 20
+
+# Búsqueda estricta (solo coincidencias muy altas)
+face-match consulta.jpg --threshold 0.5
+
+# Reconstruir la base de datos (ignorar caché)
 face-match consulta.jpg --rebuild
-python -m face_match consulta.jpg --db ./database
 ```
 
 Opciones:
 
-| Opción | Descripción |
-|--------|-------------|
-| `query` | Imagen con el rostro a buscar (obligatorio) |
-| `--db` | Carpeta de la galería (por defecto `./database`) |
-| `-n` / `--top` | Cuántos resultados mostrar (por defecto 10) |
-| `--metric` | `cosine` (por defecto) o `l2` |
-| `--rebuild` | Ignora la caché y vuelve a calcular embeddings |
+| Opción | Atajo | Descripción |
+|--------|-------|-------------|
+| `query` | - | Imagen con el rostro a buscar (obligatorio) |
+| `--db` | - | Carpeta de la galería (por defecto `./database`) |
+| `--top` | `-n` | Máximo de resultados a mostrar (por defecto 10) |
+| `--threshold`| `-t` | Umbral de similitud. (Coseno defecto: `0.363`, L2 defecto: `1.128`) |
+| `--metric` | - | `cosine` (por defecto) o `l2` |
+| `--rebuild` | - | Ignora la caché y vuelve a extraer embeddings |
 
-### Modelos en disco
+### Cómo interpretar los resultados
 
-Por defecto los modelos se guardan en `%USERPROFILE%\.cache\face_match\models` (Windows) o `~/.cache/face_match/models` (Linux/macOS). Puedes cambiar la ubicación con la variable de entorno `FACE_MATCH_MODELS` (ruta a un directorio).
+Este sistema soporta dos métricas de comparación:
 
-### Caché de la galería
+- **Métrica Coseno (Recomendada):** Los valores suelen ir de 0 a 1. **Mayor es mejor**. Un valor > 0.363 suele indicar que es la misma persona.
+- **Métrica L2 (Norma):** Distancia euclídea entre vectores. **Menor es mejor**. Un valor < 1.128 suele indicar coincidencia.
 
-En la carpeta `--db` se crea `.face_embeddings_cache.pkl` para no recalcular embeddings si el archivo no cambió. Usa `--rebuild` para forzar recálculo.
+### Caché y Estabilidad
+
+- **Caché Inteligente:** Se genera `.face_embeddings_cache.pkl` en la carpeta `--db`. Solo se recalculan las fotos modificadas, permitiendo búsquedas en milisegundos.
+- **Descarga Segura:** Los modelos ONNX se descargan de [OpenCV Zoo](https://github.com/opencv/opencv_zoo) con validación de integridad y timeouts para mayor fiabilidad.
+
 
 ## Desarrollo
 

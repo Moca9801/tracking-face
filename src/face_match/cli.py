@@ -46,6 +46,18 @@ def main() -> int:
     threshold = args.threshold
     if threshold is None:
         threshold = 0.363 if dist == 0 else 1.128
+    else:
+        # Validar rango según la métrica seleccionada
+        if dist == 0 and not (0.0 <= threshold <= 1.0):
+            parser.error(
+                f"--threshold {threshold!r} fuera de rango para coseno. "
+                "Debe estar entre 0.0 y 1.0 (ej. 0.363)."
+            )
+        elif dist == 1 and threshold <= 0.0:
+            parser.error(
+                f"--threshold {threshold!r} inválido para L2. "
+                "Debe ser un número positivo (ej. 1.128)."
+            )
 
     return run_search(
         query=args.query,

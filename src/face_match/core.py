@@ -38,7 +38,27 @@ def ensure_model(filename: str) -> Path:
     url = f"{MODELS_BASE}/{filename}"
     print(f"Descargando modelo: {name} (puede tardar)...", file=sys.stderr)
     part = path.with_suffix(path.suffix + ".part")
-    urllib.request.urlretrieve(url, str(part))
+    try:
+        # Timeout de 60 s de conexión + 300 s de lectura para redes lentas
+        with urllib.request.urlopen(url, timeout=60) as response:  # noqa: S310
+            with open(part, "wb") as f:
+                while True:
+                    chunk = response.read(1 << 16)  # 64 KB por bloque
+                    if not chunk:
+                        break
+                    f.write(chunk)
+    except Exception as exc:
+        part.unlink(missing_ok=True)
+        raise RuntimeError(
+            f"No se pudo descargar el modelo '{name}'. "
+            f"Verifica tu conexión a Internet. Detalle: {exc}"
+        ) from exc
+    # Validación mínima de integridad: el modelo debe pesar más de 1 MB
+    if part.stat().st_size < 1_000_000:
+        part.unlink(missing_ok=True)
+        raise RuntimeError(
+            f"El archivo descargado '{name}' parece estar corrupto (tamaño inesperadamente pequeño)."
+        )
     part.replace(path)
     return path
 
