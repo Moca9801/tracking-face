@@ -222,3 +222,31 @@ class TestResultOrdering:
             d1 = float(lines[0].split("dist=")[1].split()[0])
             d2 = float(lines[1].split("dist=")[1].split()[0])
             assert d1 >= d2, f"Coseno: resultado 1 ({d1}) debe ser >= resultado 2 ({d2})"
+
+
+class TestSDKInterface:
+    """Verifica que la API para desarrolladores (SDK) funciona correctamente."""
+
+    def test_find_matches_returns_dict(self, tmp_path, monkeypatch, capsys):
+        """find_matches debe devolver un diccionario con estructura de datos, no imprimir."""
+        from face_match import find_matches
+        
+        gallery = _make_gallery(tmp_path, n=2)
+        query = _make_query(tmp_path)
+
+        monkeypatch.setattr(_search_module, "ensure_model", _stub_ensure_model)
+        monkeypatch.setattr(_search_module, "embed", _make_embed_stub([0.9, 0.8]))
+        monkeypatch.setattr(_search_module, "load_bgr", lambda p: np.zeros((10, 10, 3), dtype=np.uint8))
+        monkeypatch.setattr("cv2.FaceDetectorYN.create", lambda *a, **kw: object())
+        monkeypatch.setattr("cv2.FaceRecognizerSF.create", lambda *a, **kw: object())
+
+        data = find_matches(query=query, db=gallery, threshold=0.0)
+        
+        assert isinstance(data, dict)
+        assert "results" in data
+        assert len(data["results"]) == 2
+        
+        # Verificar que no hubo salida a consola (SDK silencioso)
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert captured.err == ""

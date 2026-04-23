@@ -72,15 +72,15 @@ for res in data["results"]:
 
 Opciones:
 
-| Opción | Atajo | Descripción |
-|--------|-------|-------------|
-| `query` | - | Imagen con el rostro a buscar (obligatorio) |
-| `--db` | - | Carpeta de la galería (por defecto `./database`) |
-| `--top` | `-n` | Máximo de resultados a mostrar (por defecto 10) |
-| `--threshold`| `-t` | Umbral de similitud. (Coseno defecto: `0.363`, L2 defecto: `1.128`) |
-| `--metric` | - | `cosine` (por defecto) o `l2` |
-| `--device` | - | Dispositivo de procesamiento: `cpu` (por defecto) o `gpu` |
-| `--rebuild` | - | Ignora la caché y vuelve a extraer embeddings |
+| Opción (CLI) | Parámetro (SDK) | Atajo | Descripción |
+|--------------|-----------------|-------|-------------|
+| `query`      | `query`         | -     | Imagen con el rostro a buscar (obligatorio) |
+| `--db`       | `db`            | -     | Carpeta de la galería (por defecto `./database`) |
+| `--top`      | `top`           | `-n`  | Máximo de resultados (por defecto 10) |
+| `--threshold`| `threshold`     | `-t`  | Umbral de similitud (def: 0.363 / 1.128) |
+| `--metric`   | `distance`      | -     | `cosine` (0) o `l2` (1) |
+| `--device`   | `device`        | -     | `cpu` o `gpu` |
+| `--rebuild`  | `rebuild_cache` | -     | Ignora la caché y vuelve a extraer embeddings |
 
 ### ¿Cuándo usar CPU vs GPU?
 
