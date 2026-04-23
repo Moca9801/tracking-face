@@ -29,16 +29,29 @@ def main() -> int:
         help="Distancia entre vectores (por defecto cosine / FR_COSINE).",
     )
     parser.add_argument(
+        "-t",
+        "--threshold",
+        type=float,
+        default=None,
+        help="Umbral mínimo de similitud. Recomendado: cosine=0.363, l2=1.128.",
+    )
+    parser.add_argument(
         "--rebuild",
         action="store_true",
         help="Ignora caché y vuelve a extraer descriptores de toda la base.",
     )
     args = parser.parse_args()
     dist = 0 if args.metric == "cosine" else 1
+
+    threshold = args.threshold
+    if threshold is None:
+        threshold = 0.363 if dist == 0 else 1.128
+
     return run_search(
         query=args.query,
         db=args.db,
         top=max(1, args.top),
         distance=dist,
         rebuild_cache=args.rebuild,
+        threshold=threshold,
     )

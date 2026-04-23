@@ -27,6 +27,7 @@ def run_search(
     top: int,
     distance: int,
     rebuild_cache: bool,
+    threshold: float,
 ) -> int:
     if not query.is_file():
         print(f"No existe la imagen de consulta: {query}", file=sys.stderr)
@@ -102,7 +103,17 @@ def run_search(
                 continue
             cache[key] = (mtime, feat)
             need_save = True
+        
         d = float(recognizer.match(q_feat_f, feat, dis_type))
+        
+        # Filtrado por umbral (threshold)
+        if distance == 0: # Coseno (más es mejor)
+            if d < threshold:
+                continue
+        else: # L2 (menos es mejor)
+            if d > threshold:
+                continue
+                
         results.append((d, imp, metric))
 
     if need_save and cache:
