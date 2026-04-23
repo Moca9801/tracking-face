@@ -20,4 +20,4 @@
 
 ## Reporte de Seguridad
 
-Si encuentras una vulnerabilidad de seguridad, por favor no abras un issue público. Envía un correo a los mantenedores para resolverlo de forma privada.
+Si encuentras una vulnerabilidad de seguridad, por favor **no abras un issue público**. Utiliza la función de **[GitHub Security Advisories](https://docs.github.com/en/code-security/security-advisories/repository-security-advisories/about-repository-security-advisories)** para reportarla de forma privada. Esto nos permite coordinar una solución antes de que la vulnerabilidad se haga pública.

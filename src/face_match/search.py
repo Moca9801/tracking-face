@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import TypedDict
 
 import cv2
 import faiss
@@ -10,7 +11,6 @@ import numpy as np
 
 from face_match.core import (
     CACHE_NAME,
-    IMAGE_EXTENSIONS,
     SFACE_NAME,
     YUNET_NAME,
     embed,
@@ -22,6 +22,24 @@ from face_match.core import (
 )
 
 
+class SearchResult(TypedDict):
+    distance: float
+    path: Path
+    metric: str
+
+
+class SearchResponse(TypedDict):
+    query: Path
+    db: Path
+    total_scanned: int
+    with_face: int
+    results: list[SearchResult]
+    metric: str
+    threshold: float
+    engine: str
+    device: str
+
+
 def find_matches(
     query: Path,
     db: Path,
@@ -30,7 +48,7 @@ def find_matches(
     rebuild_cache: bool = False,
     threshold: float | None = None,
     device: str = "cpu",
-) -> dict:
+) -> SearchResponse:
     """
     Realiza una búsqueda de rostros y devuelve los resultados como estructura de datos.
     
@@ -98,9 +116,11 @@ def find_matches(
             feat = np.asarray(entry[1])
         else:
             bgr = load_bgr(imp)
-            if bgr is None: continue
+            if bgr is None:
+                continue
             feat = embed(bgr, detector, recognizer)
-            if feat is None: continue
+            if feat is None:
+                continue
             cache[key] = (mtime, feat)
             need_save = True
         
@@ -140,16 +160,19 @@ def find_matches(
         except Exception:
             used_device = "CPU"
     
-    D, I = index.search(xq, len(all_paths))
+    D, indices = index.search(xq, len(all_paths))
     
     results = []
-    for dist_val, idx in zip(D[0], I[0]):
-        if idx == -1: continue
+    for dist_val, idx in zip(D[0], indices[0]):
+        if idx == -1:
+            continue
         d = float(dist_val)
-        if distance == 0: # Coseno
-            if d < threshold: continue
-        else: # L2
-            if d > threshold: continue
+        if distance == 0:  # Coseno
+            if d < threshold:
+                continue
+        else:  # L2
+            if d > threshold:
+                continue
             
         results.append({
             "distance": d,

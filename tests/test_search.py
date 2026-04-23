@@ -217,7 +217,7 @@ class TestResultOrdering:
 
         out = capsys.readouterr().out
         # Extraer las distancias del output impreso
-        lines = [l for l in out.splitlines() if l.strip().startswith(("1.", "2.", "3."))]
+        lines = [line for line in out.splitlines() if line.strip().startswith(("1.", "2.", "3."))]
         if len(lines) >= 2:
             d1 = float(lines[0].split("dist=")[1].split()[0])
             d2 = float(lines[1].split("dist=")[1].split()[0])
@@ -244,7 +244,15 @@ class TestSDKInterface:
         
         assert isinstance(data, dict)
         assert "results" in data
+        assert data["total_scanned"] == 2
         assert len(data["results"]) == 2
+        
+        # Verificar integridad de los datos devueltos
+        res0 = data["results"][0]
+        assert "distance" in res0
+        assert "path" in res0
+        assert isinstance(res0["path"], Path)
+        assert res0["distance"] >= 0.0
         
         # Verificar que no hubo salida a consola (SDK silencioso)
         captured = capsys.readouterr()
