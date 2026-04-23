@@ -111,15 +111,18 @@ def run_search(
         except OSError as e:
             print(f"Aviso: no se pudo guardar caché {cache_path}: {e}", file=sys.stderr)
 
-    results.sort(key=lambda x: x[0])
+    results.sort(key=lambda x: x[0], reverse=(distance == 0))
     k = min(top, len(results))
 
     print()
     print(f"Consulta: {query}")
     print(f"Base: {db.resolve()}  ({len(images)} imágenes, {len(results)} con rostro)")
-    print(
-        f"Métrica: {metric}  (valores menores = más parecido, según OpenCV FaceRecognizerSF)"
+    desc = (
+        "valores mayores = más parecido"
+        if distance == 0
+        else "valores menores = más parecido"
     )
+    print(f"Métrica: {metric} ({desc})")
     print()
     for i in range(k):
         d, p, m = results[i]
