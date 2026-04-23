@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "face-match"
-version = "0.1.0"
-description = "Búsqueda de coincidencias faciales en una carpeta de imágenes (OpenCV YuNet + SFace, sin dependencias de deep learning pesadas)."
+version = "0.2.0"
+description = "Búsqueda de coincidencias faciales ultra rápida (OpenCV YuNet + SFace + FAISS)."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
 authors = [{ name = "MOCA" }]
-keywords = ["face-recognition", "opencv", "biometrics", "face-search", "sface"]
+keywords = ["face-recognition", "opencv", "faiss", "biometrics", "face-search", "sface"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Environment :: Console",
@@ -29,6 +29,7 @@ classifiers = [
 dependencies = [
   "opencv-python>=4.8.0",
   "numpy>=1.24.0",
+  "faiss-cpu>=1.7.4",
 ]
 
 [project.optional-dependencies]

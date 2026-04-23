@@ -36,6 +36,12 @@ def main() -> int:
         help="Umbral mínimo de similitud. Recomendado: cosine=0.363, l2=1.128.",
     )
     parser.add_argument(
+        "--device",
+        choices=["cpu", "gpu"],
+        default="cpu",
+        help="Dispositivo (cpu/gpu). Requiere drivers compatibles.",
+    )
+    parser.add_argument(
         "--rebuild",
         action="store_true",
         help="Ignora caché y vuelve a extraer descriptores de toda la base.",
@@ -66,4 +72,5 @@ def main() -> int:
         distance=dist,
         rebuild_cache=args.rebuild,
         threshold=threshold,
+        device=args.device,
     )

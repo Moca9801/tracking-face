@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import cv2
+import faiss
 import numpy as np
 
 from face_match.core import (
@@ -28,6 +29,7 @@ def run_search(
     distance: int,
     rebuild_cache: bool,
     threshold: float,
+    device: str = "cpu",
 ) -> int:
     if not query.is_file():
         print(f"No existe la imagen de consulta: {query}", file=sys.stderr)
@@ -55,6 +57,12 @@ def run_search(
     detector = cv2.FaceDetectorYN.create(str(det_path), "", (w0, h0), 0.9, 0.3, 5000, 0, 0)
     recognizer = cv2.FaceRecognizerSF.create(str(rec_path), "")
 
+    if device == "gpu":
+        detector.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+        detector.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+        recognizer.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+        recognizer.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+
     q_feat = embed(q_img, detector, recognizer)
     if q_feat is None:
         print(
@@ -64,29 +72,25 @@ def run_search(
         )
         return 1
 
-    dis_type = (
-        cv2.FaceRecognizerSF_FR_COSINE
-        if distance == 0
-        else cv2.FaceRecognizerSF_FR_NORM_L2
-    )
-    metric = "coseno" if dis_type == cv2.FaceRecognizerSF_FR_COSINE else "L2"
-
     cache_path = db / CACHE_NAME
     cache: dict = {} if rebuild_cache else load_cache(cache_path)
-    results: list[tuple[float, Path, str]] = []
+    
+    # Recolección de embeddings
+    all_feats = []
+    all_paths = []
     need_save = rebuild_cache
-    q_feat_f = q_feat
-    n_with_face = 0  # contador real de imágenes donde se detectó un rostro
 
     for imp in images:
         if imp.resolve() == query.resolve():
             continue
         if imp.suffix.lower() == ".onnx":
             continue
+        
         mtime = imp.stat().st_mtime
         key = str(imp.resolve())
         entry = cache.get(key)
         feat: np.ndarray | None = None
+        
         if (
             not rebuild_cache
             and isinstance(entry, tuple)
@@ -94,7 +98,6 @@ def run_search(
             and entry[0] == mtime
         ):
             feat = np.asarray(entry[1])
-            n_with_face += 1
         else:
             bgr = load_bgr(imp)
             if bgr is None:
@@ -103,21 +106,11 @@ def run_search(
             if feat is None:
                 print(f"Sin rostro (omitida): {imp.name}", file=sys.stderr)
                 continue
-            n_with_face += 1
             cache[key] = (mtime, feat)
             need_save = True
-
-        d = float(recognizer.match(q_feat_f, feat, dis_type))
-
-        # Filtrado por umbral (threshold)
-        if distance == 0:  # Coseno (más es mejor)
-            if d < threshold:
-                continue
-        else:  # L2 (menos es mejor)
-            if d > threshold:
-                continue
-
-        results.append((d, imp, metric))
+        
+        all_feats.append(feat.flatten())
+        all_paths.append(imp)
 
     if need_save and cache:
         try:
@@ -125,31 +118,76 @@ def run_search(
         except OSError as e:
             print(f"Aviso: no se pudo guardar caché {cache_path}: {e}", file=sys.stderr)
 
+    if not all_feats:
+        print("No se encontraron rostros en la galería para comparar.", file=sys.stderr)
+        return 1
+
+    # Preparar datos para FAISS
+    xb = np.array(all_feats).astype("float32")
+    xq = q_feat.reshape(1, -1).astype("float32")
+    
+    # FAISS: Normalizar si es coseno (Inner Product en vectores unidad = Coseno)
+    if distance == 0:
+        faiss.normalize_L2(xb)
+        faiss.normalize_L2(xq)
+        index = faiss.IndexFlatIP(xb.shape[1])
+        metric_name = "coseno"
+        desc = "valores mayores = más parecido"
+    else:
+        index = faiss.IndexFlatL2(xb.shape[1])
+        metric_name = "L2"
+        desc = "valores menores = más parecido"
+
+    index.add(xb)
+    
+    # Mover índice a GPU si se solicita
+    used_device = "CPU"
+    if device == "gpu":
+        try:
+            res = faiss.StandardGpuResources()
+            index = faiss.index_cpu_to_gpu(res, 0, index)
+            used_device = "GPU"
+        except Exception:
+            print("Aviso: FAISS GPU no disponible. Usando CPU...", file=sys.stderr)
+            used_device = "CPU"
+    
+    # Búsqueda vectorial
+    D, I = index.search(xq, len(all_paths))
+    
+    # Filtrado por umbral y preparación de resultados
+    results = []
+    for dist_val, idx in zip(D[0], I[0]):
+        if idx == -1: continue
+        
+        d = float(dist_val)
+        # SFace match devuelve valores específicos, FAISS IP devuelve el producto punto.
+        # Para vectores normalizados, son idénticos.
+        
+        if distance == 0: # Coseno
+            if d < threshold: continue
+        else: # L2
+            if d > threshold: continue
+            
+        results.append((d, all_paths[idx], metric_name))
+
+    # Ordenar (Coseno descendente, L2 ascendente)
     results.sort(key=lambda x: x[0], reverse=(distance == 0))
     k = min(top, len(results))
-
-    desc = (
-        "valores mayores = más parecido"
-        if distance == 0
-        else "valores menores = más parecido"
-    )
 
     print()
     print(f"Consulta: {query}")
     print(
         f"Base: {db.resolve()}  "
         f"({len(images)} imágenes escaneadas, "
-        f"{n_with_face} con rostro detectado, "
+        f"{len(all_paths)} con rostro detectado, "
         f"{len(results)} supera umbral {threshold:.3f})"
     )
-    print(f"Métrica: {metric} ({desc})")
+    print(f"Métrica: {metric_name} ({desc}) [Motor: FAISS {used_device}]")
     print()
 
-    # Bug fix: este check debe ir ANTES del loop de impresión
     if not results:
         print(
-            f"Sin coincidencias. Ninguna imagen superó el umbral de similitud ({threshold:.3f}). "
-            "Prueba con un umbral más bajo (ej. --threshold 0.2) o usa otra foto.",
+            f"Sin coincidencias. Ninguna imagen superó el umbral de similitud ({threshold:.3f}).",
             file=sys.stderr,
         )
         return 1
@@ -159,4 +197,5 @@ def run_search(
         print(f"{i + 1}.  dist={d:.4f}  {m}  {p.resolve()}")
 
     return 0
+
 
