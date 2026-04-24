@@ -37,7 +37,11 @@ Desktop.ini
 *.onnx.part
 
 # Caché de embeddings junto a la galería
-database/.face_embeddings_cache.pkl
-database/gallery
-param.png
-params.png
+.face_embeddings_cache.json
+.face_embeddings_cache.json.tmp
+
+# Datos locales
+database/
+*.png
+*.jpg
+*.jpeg

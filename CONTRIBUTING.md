@@ -40,6 +40,11 @@ Mantenemos una barra de calidad alta; el CI de GitHub no permitirá fusiones si 
 
 ## Proceso de Pull Request
 
+1. **Crear una rama**: Usa un nombre descriptivo (ej: `fix-bug-identificacion` o `feat-nueva-metrica`).
+2. **Realizar cambios**: Sigue los estándares de código y tipado.
+3. **Validar localmente**: Asegúrate de que `ruff`, `mypy` y `pytest` pasen en verde.
+4. **Abrir PR**: Describe claramente qué problema resuelve o qué funcionalidad añade tu cambio.
+
 ## Estándares de Código
 
 - Usamos **anotaciones de tipos** (type hints) en todas las funciones nuevas.

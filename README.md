@@ -104,7 +104,7 @@ Este sistema soporta dos métricas de comparación:
 
 ### Caché y Estabilidad
 
-- **Caché Inteligente:** Se genera `.face_embeddings_cache.pkl` en la carpeta `--db`. Solo se recalculan las fotos modificadas, permitiendo búsquedas en milisegundos.
+- **Caché Inteligente:** Se genera `.face_embeddings_cache.json` en la carpeta `--db`. Solo se recalculan las fotos modificadas, permitiendo búsquedas en milisegundos.
 - **Descarga Segura:** Los modelos ONNX se descargan de [OpenCV Zoo](https://github.com/opencv/opencv_zoo) con validación de integridad y timeouts para mayor fiabilidad.
 
 
@@ -114,6 +114,14 @@ Este sistema soporta dos métricas de comparación:
 pip install -e ".[dev]"
 pytest
 ```
+
+### Seguridad y Privacidad de Datos
+
+> [!CAUTION]
+> **Datos Biométricos en Disco**: El archivo `.face_embeddings_cache.json` generado en la carpeta de la base de datos contiene representaciones matemáticas de rostros (embeddings) y **rutas relativas** de archivos de la galería. 
+> - **No compartas** este archivo.
+> - Trátalo como información confidencial según las leyes de protección de datos de tu región.
+> - La caché es en formato JSON (seguro) para evitar riesgos de ejecución de código, pero el acceso al archivo debe estar restringido mediante permisos de sistema.
 
 ## Aviso legal, privacidad y uso responsable
 

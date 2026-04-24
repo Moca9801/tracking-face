@@ -57,7 +57,7 @@ def find_matches(
         db: Ruta a la carpeta de la galería.
         top: Máximo de resultados a devolver.
         distance: 0 para Coseno, 1 para L2.
-        rebuild_cache: Si es True, ignora el archivo .pkl existente.
+        rebuild_cache: Si es True, ignora el archivo de caché JSON existente.
         threshold: Umbral de similitud (opcional, usa valores por defecto si es None).
         device: "cpu" o "gpu".
 
@@ -73,7 +73,7 @@ def find_matches(
 
     q_img = load_bgr(query)
     if q_img is None:
-        raise ValueError(f"No se pudo leer la imagen de consulta: {query}")
+        raise ValueError(f"No se pudo leer la imagen de consulta: {query.name}")
         
     h0, w0 = q_img.shape[:2]
     detector = cv2.FaceDetectorYN.create(str(det_path), "", (w0, h0), 0.9, 0.3, 5000, 0, 0)
@@ -223,9 +223,9 @@ def run_search(
     desc = "valores mayores = más parecido" if distance == 0 else "valores menores = más parecido"
 
     print()
-    print(f"Consulta: {data['query']}")
+    print(f"Consulta: {data['query'].name}")
     print(
-        f"Base: {data['db'].resolve()}  "
+        f"Base: {data['db'].name}  "
         f"({data['total_scanned']} imágenes escaneadas, "
         f"{data['with_face']} con rostro detectado, "
         f"{len(results)} resultados devueltos)"

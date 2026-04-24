@@ -34,7 +34,7 @@ def test_list_image_paths_filters(tmp_path: Path) -> None:
 
 
 def test_cache_roundtrip(tmp_path: Path) -> None:
-    p = tmp_path / "c.pkl"
+    p = tmp_path / "c.json"
     data = {"k": (1.0, np.array([1, 2, 3]))}
     save_cache(p, data)
     loaded = load_cache(p)
@@ -45,7 +45,7 @@ def test_cache_roundtrip(tmp_path: Path) -> None:
 
 
 def test_cache_missing_returns_empty() -> None:
-    assert load_cache(Path("/nonexistent/path/cache.pkl")) == {}
+    assert load_cache(Path("/nonexistent/path/cache.json")) == {}
 
 
 def test_list_image_paths_nested(tmp_path: Path) -> None:
