@@ -79,8 +79,10 @@ def ensure_model(filename: str) -> Path:
         actual_hash = _calculate_sha256(part)
         if actual_hash != expected_hash:
             part.unlink(missing_ok=True)
+            raise RuntimeError(
                 f"Integrity error in '{name}': Hash mismatch. "
                 "The download might have been intercepted or is incomplete."
+            )
 
     part.replace(path)
     return path
