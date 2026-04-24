@@ -49,8 +49,8 @@ strict = true
 ignore_missing_imports = true
 
 [project.urls]
-"Homepage" = "https://github.com/Moca9801/tracking-face"
-"Bug Tracker" = "https://github.com/Moca9801/tracking-face/issues"
+"Homepage" = "https://github.com/Moca9801/face-match"
+"Bug Tracker" = "https://github.com/Moca9801/face-match/issues"
 
 [project.scripts]
 face-match = "face_match.cli:main"

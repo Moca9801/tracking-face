@@ -16,8 +16,8 @@ Herramienta de línea de comandos que, dada una **foto de consulta**, recorre un
 ## Instalación
 
 ```bash
-git clone https://github.com/Moca9801/tracking-face.git
-cd tracking-face
+git clone https://github.com/Moca9801/face-match.git
+cd face-match
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 # Linux/macOS: source .venv/bin/activate
