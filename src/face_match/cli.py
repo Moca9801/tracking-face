@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from face_match import __version__
 from face_match.search import run_search
 
 
